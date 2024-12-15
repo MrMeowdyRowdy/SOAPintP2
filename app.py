@@ -4,7 +4,7 @@ from spyne.server.wsgi import WsgiApplication
 from sqlalchemy import create_engine, Column, Integer, String, Date
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
-from flask import Flask
+from flask import Flask, request, Response
 
 # Configuración de la base de datos
 DATABASE_URL = 'sqlite:///availability.db'
@@ -46,10 +46,12 @@ class AvailabilityService(ServiceBase):
             yield f"<error>{str(e)}</error>"
 
 # Configuración de la aplicación SOAP
-soap_app = Application([AvailabilityService], 
-                        tns='http://luxurystay.com/soap',
-                        in_protocol=Soap11(validator='lxml'),
-                        out_protocol=Soap11())
+soap_app = Application(
+    [AvailabilityService],
+    tns='http://luxurystay.com/soap',
+    in_protocol=Soap11(validator='lxml'),
+    out_protocol=Soap11()
+)
 
 wsgi_app = WsgiApplication(soap_app)
 
@@ -74,9 +76,26 @@ with app.app_context():
         session.commit()
         print("Datos de prueba insertados.")
 
-@app.route("/soap", methods=["POST"])
+@app.route("/soap", methods=["POST", "GET"])
 def soap():
-    return wsgi_app
+    if request.method == "GET":
+        # Delegar la solicitud GET al WsgiApplication para generar el WSDL
+        environ = request.environ.copy()
+        environ['QUERY_STRING'] = 'wsdl'
+
+        def start_response(status, headers):
+            """Callable WSGI start_response"""
+            response_headers = [(key, value) for key, value in headers]
+            response_headers.append(('Content-Type', 'application/xml'))
+            return Response(status=status, headers=response_headers)
+
+        response = wsgi_app(environ, start_response)
+        return Response(response, content_type="application/xml")
+    else:
+        # Manejar solicitudes SOAP normales
+        return wsgi_app
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
