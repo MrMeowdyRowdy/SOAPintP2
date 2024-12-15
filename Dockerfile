@@ -1,17 +1,24 @@
-# Imagen base de Python
+# Use a lightweight Python image
 FROM python:3.10-slim
 
-# Establecer el directorio de trabajo
+# Set the working directory in the container
 WORKDIR /app
 
-# Copiar los archivos del proyecto al contenedor
+# Copy the application code into the container
 COPY . /app
 
-# Instalar las dependencias del proyecto
-RUN pip install flask spyne sqlalchemy
+# Install system dependencies for lxml
+RUN apt-get update && apt-get install -y \
+    libxml2-dev \
+    libxslt-dev \
+    && apt-get clean
 
-# Exponer el puerto en el que se ejecutará la aplicación
-EXPOSE 5000
+# Install Python dependencies
+RUN pip install --no-cache-dir flask flask-sqlalchemy requests spyne lxml
 
-# Comando para ejecutar la aplicación
+# Expose the application port
+EXPOSE 5001
+
+# Set the default command to run the app
 CMD ["python", "app.py"]
+
