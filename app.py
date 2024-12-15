@@ -58,7 +58,22 @@ app = Flask(__name__)
 
 @app.before_first_request
 def setup_db():
+    # Crear la estructura de la base de datos
     Base.metadata.create_all(engine)
+
+    # Verificar si la tabla ya tiene datos
+    if not session.query(Availability).first():
+        # Insertar datos de prueba
+        sample_data = [
+            Availability(room_id=1, room_type='Single', available_date=datetime(2024, 12, 15).date(), status='available'),
+            Availability(room_id=2, room_type='Double', available_date=datetime(2024, 12, 15).date(), status='maintenance'),
+            Availability(room_id=3, room_type='Suite', available_date=datetime(2024, 12, 16).date(), status='available'),
+            Availability(room_id=4, room_type='Single', available_date=datetime(2024, 12, 17).date(), status='available'),
+            Availability(room_id=5, room_type='Double', available_date=datetime(2024, 12, 17).date(), status='available'),
+        ]
+        session.add_all(sample_data)
+        session.commit()
+        print("Datos de prueba insertados.")
 
 @app.route("/soap", methods=["POST"])
 def soap():
