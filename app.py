@@ -56,14 +56,13 @@ wsgi_app = WsgiApplication(soap_app)
 # Configuración de Flask
 app = Flask(__name__)
 
-@app.before_first_request
-def setup_db():
+# Configuración de la base de datos y datos de prueba
+with app.app_context():
     # Crear la estructura de la base de datos
     Base.metadata.create_all(engine)
 
-    # Verificar si la tabla ya tiene datos
+    # Insertar datos de prueba si la tabla está vacía
     if not session.query(Availability).first():
-        # Insertar datos de prueba
         sample_data = [
             Availability(room_id=1, room_type='Single', available_date=datetime(2024, 12, 15).date(), status='available'),
             Availability(room_id=2, room_type='Double', available_date=datetime(2024, 12, 15).date(), status='maintenance'),
